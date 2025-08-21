@@ -116,7 +116,28 @@ mat3 q_mat3(quat q) {
 
 // ==== Utility Functions ====
 
+float smoothmin_ex(float a, float b, float k, out float weight) {
+    weight = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+
+    return mix(b, a, weight) - k * weight * (1.0 - weight);
+}
+
 float smoothmin(float a, float b, float k) {
-    float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
-    return mix(b, a, h) - k * h * (1.0 - h);
+    float weight;
+    return smoothmin_ex(a, b, k, weight);
+}
+
+vec3 sampleHemisphere(vec3 n, vec2 xi) {
+    float phi = 2.0 * PI * xi.x;
+    float cosTheta = sqrt(1.0 - xi.y);
+    float sinTheta = sqrt(xi.y);
+
+    vec3 tangent = normalize(abs(n.x) > 0.1
+        ? cross(n, vec3(0,1,0))
+        : cross(n, vec3(1,0,0)));
+    vec3 bitangent = cross(n, tangent);
+
+    return normalize(tangent * cos(phi) * sinTheta +
+                     bitangent * sin(phi) * sinTheta +
+                     n * cosTheta);
 }
