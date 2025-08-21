@@ -57,7 +57,24 @@ pub fn main() anyerror!void {
 
     rg.setFont(gui_font);
 
-    const shader = try rl.loadShader(null, "shaders/raymarch.fs");
+    const env_src = try std.fs.cwd().readFileAlloc(
+        std.heap.page_allocator,
+        "shaders/env.glsl",
+        math.maxInt(usize),
+    );
+    defer std.heap.page_allocator.free(env_src);
+
+    const march_src = try std.fs.cwd().readFileAlloc(
+        std.heap.page_allocator,
+        "shaders/raymarch.fs",
+        math.maxInt(usize),
+    );
+    defer std.heap.page_allocator.free(march_src);
+
+    const concat_src = try std.mem.concatWithSentinel(std.heap.page_allocator, u8, &.{ env_src, "\n", march_src }, 0);
+    defer std.heap.page_allocator.free(concat_src);
+
+    const shader = try rl.loadShaderFromMemory(null, concat_src);
     defer rl.unloadShader(shader);
 
     const loc_resolution = rl.getShaderLocation(shader, "uResolution");
@@ -222,7 +239,7 @@ pub fn main() anyerror!void {
                                 .{
                                     .x = margin,
                                     .y = margin + line_offset * font_size,
-                                    .width = box_width - margin * 2,
+                                    .width = box_width,
                                     .height = font_size,
                                 },
                                 "",
@@ -240,7 +257,7 @@ pub fn main() anyerror!void {
                                 .{
                                     .x = margin,
                                     .y = margin + line_offset * font_size,
-                                    .width = box_width - margin * 2,
+                                    .width = box_width,
                                     .height = font_size,
                                 },
                                 "",
